@@ -1,0 +1,5 @@
+<Bindings>
+	<Binding name="Reapply poisons" header="HEAD"> 	PoisonBuddyReapplyPoisons() 			</Binding>
+	<Binding name="Show/hide buttons"> 				PoisonBuddyToggleVisibility() 			</Binding>
+	<Binding name="Lock/unlock buttons"> 			PoisonBuddyToggleLock() 				</Binding>
+</Bindings>
