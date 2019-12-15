@@ -183,7 +183,8 @@ function PSBD:getDefaultConfig()
         posY = -200,
         scale = 1,
         button = {
-            texCoords = { .08, .92, .08, .92 },
+            --texCoords = { .08, .92, .08, .92 },
+            texCoords = { 0.0, 1.0, 0.0, 1.0 },
             spacing = { x = 2, y = 2 },
             font = {
                 file = [[Fonts\Homespun.ttf]],
@@ -206,6 +207,8 @@ PSBD.PoisonDB = {
         [3] = "Crippling Poison",
         [4] = "Mind-numbing Poison",
         [5] = "Wound Poison",
+        [6] = "Flash Powder",
+        [7] = "Blinding Powder",
     },
     id = {
         [1] = { 6947, 6949, 6950, 8926, 8927, 8928 },
@@ -213,6 +216,8 @@ PSBD.PoisonDB = {
         [3] = { 3775, 3776 },
         [4] = { 5237, 6951, 9186 },
         [5] = { 10918, 10920, 10921, 10922 },
+        [6] = { 5140 },
+        [7] = { 5530 },
     },
     icon = {
         [1] = "Interface\\Icons\\Ability_Poisons",
@@ -220,6 +225,8 @@ PSBD.PoisonDB = {
         [3] = "Interface\\Icons\\INV_Potion_19",
         [4] = "Interface\\Icons\\Spell_Nature_NullifyDisease",
         [5] = "Interface\\Icons\\Ability_PoisonSting",
+        [6] = "Interface\\Icons\\Ability_Vanish",
+        [7] = "Interface\\Icons\\Spell_Shadow_Mindsteal",
     },
     mats = {
         [1] = {
@@ -252,6 +259,12 @@ PSBD.PoisonDB = {
             [3] = {1, "Essence of Agony", 2, "Deathweed", 1/5, "Crystal Vial"},
             [4] = {2, "Essence of Agony", 2, "Deathweed", 1/5, "Crystal Vial"},
         },
+        [6] = {
+            [1] = {1, "Flash Powder"}
+        },
+        [7] = {
+            [1] = {1/3, "Fadeleaf"}
+        }
     },
     _rankStrings = { "", " II", " III", " IV", " V", " VI", },
 }
@@ -345,13 +358,15 @@ function PSBD.createPoisonButton(parent, poisonIndex, hand)
     local button = CreateFrame("Button", "p2rkwPoisonBuddy_Button_" .. hand .. poisonIndex, parent)
     local bsize = PsbdConfig.button.size
 
-    local handInfo = {
-        ["MainHandSlot"] =      {PoisonBuddyBuyMats, "main hand", "buys reagents at vendor"},
-        ["SecondaryHandSlot"] = {PoisonBuddyCraftPoison, "off hand", "crafts a stack"},
-    }; handInfo = handInfo[hand]
-
     button:SetWidth(bsize)
     button:SetHeight(bsize)
+
+    local handInfo = {
+        ["MainHandSlot"] =      {PoisonBuddyBuyMats, "Main Hand", "Buys reagents at vendor"},
+        ["SecondaryHandSlot"] = {PoisonBuddyCraftPoison, "Off Hand", "Crafts a stack"},
+        ["Vanish"] =            {PoisonBuddyBuyMats, "Main Hand", "Buys reagents at vendor"},
+        ["Blind"] =             {PoisonBuddyCraftPoison, "Off Hand", "Crafts a stack"},
+    }; handInfo = handInfo[hand]
 
     button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     button:SetScript("OnClick", function()
@@ -454,19 +469,19 @@ function PSBD.configureUI()
     cframe.hiddenBackdrop = backdrop
 
     cframe:SetWidth(2 * (bsize + 8))
-    cframe:SetHeight(5 * (bsize + PsbdConfig.button.spacing.y) + 15)
+    cframe:SetHeight(30)
     cframe:SetPoint("TOPLEFT", PsbdConfig.posX, PsbdConfig.posY)
     --cframe:SetPoint("BOTTOM", fubarButtonFrame, 0, 0)
 
-    for poisonIndex, v in pairs(PSBD.PoisonDB.name) do
+    for poisonIndex, name in pairs(PSBD.PoisonDB.name) do
         local mh = PSBD.createPoisonButton(cframe, poisonIndex, "MainHandSlot")
         local oh = PSBD.createPoisonButton(cframe, poisonIndex, "SecondaryHandSlot")
 
         PSBD:setButton(poisonIndex, "MainHandSlot", mh)
         PSBD:setButton(poisonIndex, "SecondaryHandSlot", oh)
 
-        mh:SetPoint("TOPLEFT", 7, -10 + (poisonIndex - 1) * -(bsize + spacing.y))
-        oh:SetPoint("TOPLEFT", 7 + bsize + spacing.x, -10 + (poisonIndex - 1) * -(bsize + spacing.y))
+        mh:SetPoint("TOPLEFT", 7, -20 + (poisonIndex - 1) * -(bsize + spacing.y))
+        oh:SetPoint("TOPLEFT", 7 + bsize + spacing.x, -20 + (poisonIndex - 1) * -(bsize + spacing.y))
     end
 
     if not PsbdConfig.isVisible then
@@ -512,7 +527,7 @@ function PSBD:highlightActivePoisonButton(hand)
 
     for poisonIndex, button in pairs(PSBD._work.buttons[hand]) do
         if not r or poisonIndex ~= r.poisonIndex then
-            button:SetAlpha(0.4)
+            button:SetAlpha(0.8)
         else
             button:SetAlpha(1.0)
             PSBD:getButton(poisonIndex, hand).TimerFont:SetText(floor(r.expirationSeconds / 60))
@@ -703,7 +718,7 @@ function PoisonBuddyBuyMats(poisonIndex, count)
         if tonumber(mat) then
             howManyNeeded = tonumber(mat)
         else
-            local needed = (howManyNeeded*count) - PSBD.countItems(mat)
+            local needed = (howManyNeeded*count) --  substract carried items? (-PSBD.countItems(mat))
             if needed > 0 then
                 for i, link in Iters.merchantLinks() do
                     if string.find(link, mat) then
